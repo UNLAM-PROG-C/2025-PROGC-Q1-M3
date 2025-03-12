@@ -1,0 +1,46 @@
+name: GitFlow Branch Protection
+
+on:
+  pull_request:
+    branches: 
+        - "*"
+
+jobs:
+  # Validación para feature/* a develop
+  feature-to-develop:
+    if: startsWith(github.head_ref, 'feature/') && github.base_ref == 'develop'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR from feature/* to develop
+        run: echo "Valid PR -> feature/* to develop."
+
+  # Validación para develop a release/*
+  develop-to-release:
+    if: github.head_ref == 'develop' && startsWith(github.base_ref, 'release/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR from develop to release/*
+        run: echo "Valid PR -> develop to release/*."
+
+  # Validación para release/* a main
+  release-to-main:
+    if: startsWith(github.head_ref, 'release/') && github.base_ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR from release/* to main
+        run: echo "Valid PR -> release/* to main."
+
+  # Fallar si ninguna condición es válida
+  invalid-pr:
+    needs: [release-to-main, develop-to-release, feature-to-develop]
+    runs-on: ubuntu-latest
+    run: |
+          if [[ ${{ github.event.pull_request.head.ref }} == feature/* && ${{ github.event.pull_request.base.ref }} == develop ]] ||
+             [[ ${{ github.event.pull_request.head.ref }} == develop && ${{ github.event.pull_request.base.ref }} == release/* ]] ||
+             [[ ${{ github.event.pull_request.head.ref }} == release/* && ${{ github.event.pull_request.base.ref }} == main ]]; then
+            echo "Valid PR"
+            exit 0
+          else
+            echo "Invalid PR: This PR does not follow the GitFlow branch rules."
+            exit 1
+          fi

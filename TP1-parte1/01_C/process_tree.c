@@ -22,15 +22,18 @@ void setProcessName(const char *name);
 void sleepAndWait(int numChildren);
 void createLeaf(const char *leafName);
 
-int main() {
+int main()
+{
   pid_t pid = fork();
 
-  if (pid < 0) {
+  if (pid < 0)
+  {
     handleChildError("B");
     return EXIT_FAILURE;
   }
 
-  if (pid > 0) {
+  if (pid > 0)
+  {
     setProcessName("A");
     sleepAndWait(NUM_CHILDREN_A);
     return EXIT_SUCCESS;
@@ -40,22 +43,26 @@ int main() {
   setProcessName("B");
 
   pid = fork();
-  if (pid < 0) {
+  if (pid < 0)
+  {
     handleChildError("C");
     return EXIT_FAILURE;
   }
 
-  if (pid == 0) {
+  if (pid == 0)
+  {
     // Process C
     setProcessName("C");
 
     pid = fork();
-    if (pid < 0) {
+    if (pid < 0)
+    {
       handleChildError("E");
       return EXIT_FAILURE;
     }
 
-    if (pid == 0) {
+    if (pid == 0)
+    {
       // Process E
       setProcessName("E");
 
@@ -71,12 +78,14 @@ int main() {
   }
 
   pid = fork();
-  if (pid < 0) {
+  if (pid < 0)
+  {
     handleChildError("D");
     return EXIT_FAILURE;
   }
 
-  if (pid == 0) {
+  if (pid == 0)
+  {
     // Process D
     setProcessName("D");
 
@@ -91,32 +100,39 @@ int main() {
   return EXIT_SUCCESS;
 }
 
-void handleChildError(const char *childName) {
+void handleChildError(const char *childName)
+{
   fprintf(stderr, "Error creating process %s\n", childName);
 }
 
-void setProcessName(const char *name) {
+void setProcessName(const char *name)
+{
   char buffer[PROCESS_NAME_MAX_LENGTH];
   strncpy(buffer, name, PROCESS_NAME_MAX_LENGTH);
   prctl(PR_SET_NAME, buffer, 0, 0, 0);
 }
 
-void sleepAndWait(int numChildren) {
+void sleepAndWait(int numChildren)
+{
   sleep(SLEEP_DURATION_SECONDS);
-  for (int i = 0; i < numChildren; ++i) {
+  for (int i = 0; i < numChildren; ++i)
+  {
     wait(NULL);
   }
 }
 
-void createLeaf(const char *leafName) {
+void createLeaf(const char *leafName)
+{
   pid_t pid = fork();
 
-  if (pid < 0) {
+  if (pid < 0)
+  {
     handleChildError(leafName);
     exit(EXIT_FAILURE);
   }
 
-  if (pid == 0) {
+  if (pid == 0)
+  {
     setProcessName(leafName);
     sleepAndWait(NUM_CHILDREN_LEAF);
     exit(EXIT_SUCCESS);

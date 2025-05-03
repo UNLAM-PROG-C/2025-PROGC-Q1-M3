@@ -5,15 +5,21 @@ import os
 
 PLAYER = 5
 THROWS = 10
+DICE_MIN = 1
+DICE_MAX = 6
+SLEEP_MIN = 0.1
+SLEEP_MAX = 0.3
+WAIT_BLOCKING = 0
+THROW_INDEX_OFFSET = 1
 
 def player(id):
     sys.stdout.write(f"Player {id} enters the game.\n")
     points = 0
     for i in range(THROWS):
-        dice = random.randint(1, 6)
+        dice = random.randint(DICE_MIN, DICE_MAX)
         points += dice
-        sys.stdout.write(f"Player {id} - Throw {i + 1}: {dice}\n")
-        time.sleep(random.uniform(0.1, 0.3))
+        sys.stdout.write(f"Player {id} - Throw {i + THROW_INDEX_OFFSET}: {dice}\n")
+        time.sleep(random.uniform(SLEEP_MIN, SLEEP_MAX))
     sys.stdout.write(f"Player {id} finished with {points} points.\n")
 
 
@@ -32,7 +38,7 @@ def main():
             os._exit(os.EX_OK)
 
     for pid in processes:
-        os.waitpid(pid, 0)
+        os.waitpid(pid, WAIT_BLOCKING)
 
     print("All players have finished")
 

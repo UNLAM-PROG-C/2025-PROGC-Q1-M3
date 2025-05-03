@@ -11,6 +11,7 @@ SLEEP_MIN = 0.1
 SLEEP_MAX = 0.3
 WAIT_BLOCKING = 0
 THROW_INDEX_OFFSET = 1
+PLAYER_ID_OFFSET = 1
 
 def player(id):
     sys.stdout.write(f"Player {id} enters the game.\n")
@@ -27,14 +28,15 @@ def main():
     processes = []
 
     for player_id in range(PLAYER):
-        pid = os.fork()
+        try:
+            pid = os.fork()
+        except OSError as e:
+            sys.exit(f"Error while creating process n° {player_id + PLAYER_ID_OFFSET}: {e}")
 
-        if pid < 0:
-            sys.exit(f"Error while creating process n° {player_id}")
         if pid:
             processes.append(pid)
         else:
-            player(player_id)
+            player(player_id + PLAYER_ID_OFFSET)
             os._exit(os.EX_OK)
 
     for pid in processes:

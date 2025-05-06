@@ -1,6 +1,7 @@
 import java.util.Random;
 
-public class CameraProcess {
+public class CameraProcess 
+{
 
   public static final int NO_ACTIVITY = 0;
   public static final int MOVEMENT_DETECTED = 1;
@@ -8,7 +9,8 @@ public class CameraProcess {
   public static final int STRANGE_SHADOW = 3;
   public static final int NOISE_DETECTED = 4;
 
-  public static final String[] EVENT_NAMES = {
+  public static final String[] EVENT_NAMES = 
+  {
     "No Activity",
     "Movement Detected",
     "Thermal Anomaly",
@@ -16,8 +18,10 @@ public class CameraProcess {
     "Noise Detected"
   };
 
-  public static void main(String[] args) {
-    if (args.length != 3) {
+  public static void main(String[] args) 
+  {
+    if (args.length != 3) 
+    {
       System.out.println("Usage: java CameraProcess <zone> <duration> <interval>");
       return;
     }
@@ -28,21 +32,24 @@ public class CameraProcess {
 
     int eventCount = 0;
     Random randomEvent = new Random();
-
     long endTime = System.currentTimeMillis() + (durationSeconds * 1000);
 
-    while (System.currentTimeMillis() < endTime) {
+    while (System.currentTimeMillis() < endTime) 
+    {
       int eventId = randomEvent.nextInt(5);
       System.out.printf("[CAMERA-%s] Zone: %s | Event: %s%n", 
         ProcessHandle.current().pid(), 
         zone, 
         EVENT_NAMES[eventId]);
-      if (eventId != NO_ACTIVITY) {
+      if (eventId != NO_ACTIVITY) 
+      {
         eventCount++;
       }
-      try {
+      try 
+      {
         Thread.sleep(intervalSeconds * 1000);
-      } catch (InterruptedException e) {
+      } catch (InterruptedException e) 
+      {
         e.printStackTrace();
       }
     }

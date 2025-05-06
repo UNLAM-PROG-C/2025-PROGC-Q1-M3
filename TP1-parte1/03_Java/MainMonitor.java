@@ -1,15 +1,18 @@
 import java.io.*;
 import java.util.*;
 
-public class MainMonitor {
-
-  private static final String[] ZONES = {
+public class MainMonitor 
+{
+  private static final String[] ZONES = 
+  {
     "Basement", "Attic", "Kitchen", 
     "Bedroom", "Garden", "Mausoleum"
   };
 
-  public static void main(String[] args) throws IOException, InterruptedException {
-    if (args.length != 2) {
+  public static void main(String[] args) throws IOException, InterruptedException 
+  {
+    if (args.length != 2) 
+    {
       System.out.println("Usage: java MainMonitor <duration> <interval>");
       return;
     }
@@ -20,8 +23,10 @@ public class MainMonitor {
     List<Process> processes = new ArrayList<>();
     List<BufferedReader> readers = new ArrayList<>();
 
-    for (String zone : ZONES) {
-      ProcessBuilder builder = new ProcessBuilder(
+    for (String zone : ZONES) 
+    {
+      ProcessBuilder builder = new ProcessBuilder
+      (
         "java", "CameraProcess", zone, 
         String.valueOf(duration), 
         String.valueOf(interval)
@@ -33,25 +38,32 @@ public class MainMonitor {
     }
 
     boolean finishedCameras = false;
-    while (!finishedCameras) {
+    while (!finishedCameras) 
+    {
       finishedCameras = true;
-      for (int i = 0; i < readers.size(); i++) {
+      for (int i = 0; i < readers.size(); i++) 
+      {
         BufferedReader reader = readers.get(i);
-        if (reader.ready()) {
+        if (reader.ready()) 
+        {
           String line = reader.readLine();
-          if (line != null) {
+          if (line != null) 
+          {
             System.out.println(line);
             finishedCameras = false;
           }
-        } else {
-          if (processes.get(i).isAlive()) {
+        } else 
+        {
+          if (processes.get(i).isAlive()) 
+          {
             finishedCameras = false;
           }
         }
       }
     }
 
-    for (Process process : processes) {
+    for (Process process : processes) 
+    {
       process.waitFor();
     }
 

@@ -62,20 +62,18 @@ def plot_results(results: list[tuple[int, int, float]]):
     """
     import matplotlib.pyplot as plt
 
-    # Unzip the results
     num_clones, levels, times = zip(*results)
 
-    # Create a scatter plot
+
     plt.scatter(num_clones, levels, label='Level Reached', color='blue')
     plt.scatter(num_clones, times, label='Time Taken (s)', color='red')
 
-    # Add labels and title
+
     plt.xlabel('Number of Clones')
     plt.ylabel('Level Reached / Time Taken (s)')
     plt.title('Rust Program Performance')
     plt.legend()
 
-    # Save the plot
     plt.savefig(PLOT_FILE)
     print(f"Plot saved to {PLOT_FILE}")
 

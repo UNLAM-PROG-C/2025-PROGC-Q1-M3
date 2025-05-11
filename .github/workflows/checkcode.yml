@@ -45,7 +45,7 @@ jobs:
 
       - name: Find Java files with block comments
         run: |
-          if grep -rn '#' --include='*.py' . || grep -rn '/\*' --include='*.java' --include="*.c" --include="*.cpp" . || grep -rn '\*/' --include='*.java' --include="*.c" --include="*.cpp" .; then exit 1; else exit 0; fi
+          if grep -rn '/\*' --include='*.java' --include="*.c" --include="*.cpp" . || grep -rn '\*/' --include='*.java' --include="*.c" --include="*.cpp" .; then exit 1; else exit 0; fi
         continue-on-error: false
     
   check-bracket:

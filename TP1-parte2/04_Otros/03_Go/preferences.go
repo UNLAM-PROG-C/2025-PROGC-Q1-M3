@@ -12,6 +12,23 @@ import (
 const PreferencesFileName = "visualizaciones.csv"
 const UserIdColumn = 0
 
+type Visualization struct {
+	UserID   string
+	UserName string
+	Title    string
+	Type     string
+	Genre    string
+}
+
+type Preference struct {
+	UserID          string `json:"user_id"`
+	UserName        string `json:"user_name"`
+	ChosenGenre     string `json:"chosen_genre"`
+	ChosenType      string `json:"chosen_type"`
+	Total           int    `json:"total"`
+	DifferentGenres int    `json:"different_genres"`
+}
+
 func getRootDir() string {
 	_, callerFile, _, ok := runtime.Caller(0)
 	if !ok {

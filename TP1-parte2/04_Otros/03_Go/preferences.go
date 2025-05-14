@@ -38,14 +38,29 @@ func getRootDir() string {
 	return filepath.Dir(callerFile)
 }
 
-func getTotalUsers() map[int]struct{} {
-	root := getRootDir()
-	filePath := filepath.Join(root, PreferencesFileName)
-	f, err := os.Open(filePath)
+func getVisualizationsMap(records [][]string) map[int][]Visualization {
+	visualizations := make(map[int][]Visualization)
 
+	for _, record := range records[1:] {
+		user_id, _ := strconv.Atoi(record[UserIdColumn])
+		vis := Visualization{
+			UserID:   record[UserIdColumn],
+			UserName: record[1],
+			Title:    record[2],
+			Type:     record[3],
+			Genre:    record[4],
+		}
+		visualizations[user_id] = append(visualizations[user_id], vis)
+	}
+
+	return visualizations
+}
+
+func getVisualizations(filePath string) (map[int][]Visualization, int) {
+	f, err := os.Open(filePath)
 	if err != nil {
 		fmt.Println("Could not open file visualizaciones.csv", err)
-		return nil
+		return nil, 0
 	}
 
 	defer f.Close()
@@ -54,25 +69,25 @@ func getTotalUsers() map[int]struct{} {
 	records, err := reader.ReadAll()
 	if err != nil {
 		fmt.Println("Error reading CSV:", err)
-		return nil
+		return nil, 0
 	}
 
 	if len(records) < 2 {
 		fmt.Println("No data was found in CSV")
-		return nil
+		return nil, 0
 	}
 
-	distinct_user := make(map[int]struct{})
+	visualizations := getVisualizationsMap(records)
 
-	for _, record := range records[1:] {
-		user_id, _ := strconv.Atoi(record[UserIdColumn])
-		distinct_user[user_id] = struct{}{}
-	}
+	distinctUsers := len(visualizations)
 
-	return distinct_user
+	return visualizations, distinctUsers
 }
 
 func main() {
-	totalUsers := getTotalUsers()
 
+	root := getRootDir()
+	filePath := filepath.Join(root, PreferencesFileName)
+
+	visualizations := getVisualizations(filePath)
 }

@@ -10,8 +10,19 @@ import (
 	"sync"
 )
 
-const PreferencesFileName = "visualizaciones.csv"
-const UserIdColumn = 0
+const (
+	PreferencesFileName = "visualizaciones.csv"
+	UserIdColumn        = 0
+	UserNameColumn      = 1
+	TitleColumn         = 2
+	TypeColumn          = 3
+	GenreColumn         = 4
+	CurrentGoRoutine    = 1
+	Error               = 1
+	CurrentExecution    = 0
+	SkipHeader          = 1
+	Currentuser         = 0
+)
 
 type Visualization struct {
 	UserID   string
@@ -31,10 +42,10 @@ type Preference struct {
 }
 
 func getRootDir() string {
-	_, callerFile, _, ok := runtime.Caller(0)
+	_, callerFile, _, ok := runtime.Caller(CurrentExecution)
 	if !ok {
 		fmt.Println("Could not get callerFile")
-		os.Exit(1)
+		os.Exit(Error)
 	}
 	return filepath.Dir(callerFile)
 }
@@ -42,19 +53,25 @@ func getRootDir() string {
 func getVisualizationsMap(records [][]string) map[string][]Visualization {
 	visualizations := make(map[string][]Visualization)
 
-	for _, record := range records[1:] {
+	for _, record := range records[SkipHeader:] {
 		userId := record[UserIdColumn]
 		vis := Visualization{
 			UserID:   userId,
-			UserName: record[1],
-			Title:    record[2],
-			Type:     record[3],
-			Genre:    record[4],
+			UserName: record[UserNameColumn],
+			Title:    record[TitleColumn],
+			Type:     record[TypeColumn],
+			Genre:    record[GenreColumn],
 		}
 		visualizations[userId] = append(visualizations[userId], vis)
 	}
 
 	return visualizations
+}
+
+func readVisualizationsFile(file *os.File) ([][]string, error) {
+	reader := csv.NewReader(file)
+	records, err := reader.ReadAll()
+	return records, err
 }
 
 func getVisualizations(filePath string) map[string][]Visualization {
@@ -63,23 +80,15 @@ func getVisualizations(filePath string) map[string][]Visualization {
 		fmt.Println("Could not open file visualizaciones.csv", err)
 		return nil
 	}
-
 	defer f.Close()
+	records, err := readVisualizationsFile(f)
 
-	reader := csv.NewReader(f)
-	records, err := reader.ReadAll()
 	if err != nil {
 		fmt.Println("Error reading CSV:", err)
 		return nil
 	}
 
-	if len(records) < 2 {
-		fmt.Println("No data was found in CSV")
-		return nil
-	}
-
 	visualizations := getVisualizationsMap(records)
-
 	return visualizations
 }
 
@@ -97,7 +106,19 @@ func getPreferred(field map[string]int) string {
 	return chosenFieldValue
 }
 
-func getPreferences(userId string, userName string, visualizations []Visualization, wg *sync.WaitGroup) {
+func getPreference(userId string, userName string, chosenGenre string, chosenType string, totalVisualizations int, genreCount map[string]int) Preference {
+	preference := Preference{
+		UserID:          userId,
+		UserName:        userName,
+		ChosenGenre:     chosenGenre,
+		ChosenType:      chosenType,
+		Total:           totalVisualizations,
+		DifferentGenres: len(genreCount),
+	}
+	return preference
+}
+
+func createPreferences(userId string, userName string, visualizations []Visualization, wg *sync.WaitGroup) {
 	defer wg.Done()
 
 	genreCount := make(map[string]int)
@@ -110,25 +131,21 @@ func getPreferences(userId string, userName string, visualizations []Visualizati
 
 	chosenGenre := getPreferred(genreCount)
 	chosenType := getPreferred(typeCount)
-
-	preference := Preference{
-		UserID:          userId,
-		UserName:        userName,
-		ChosenGenre:     chosenGenre,
-		ChosenType:      chosenType,
-		Total:           len(visualizations),
-		DifferentGenres: len(genreCount),
-	}
+	preference := getPreference(userId, userName, chosenGenre, chosenType, len(visualizations), genreCount)
 
 	writePreferenceToFile(userId, preference)
-
 }
 
-func writePreferenceToFile(userId string, preference Preference) {
+func createOutputFilePath(userId string) (string, *os.File, error) {
 	root := getRootDir()
 	outFileName := fmt.Sprintf("user_%s_preferences.csv", userId)
 	outFilePath := filepath.Join(root, outFileName)
 	outputFile, err := os.Create(outFilePath)
+	return outFileName, outputFile, err
+}
+
+func writePreferenceToFile(userId string, preference Preference) {
+	outFileName, outputFile, err := createOutputFilePath(userId)
 	if err != nil {
 		fmt.Printf("Error creating preferences file for user %s: %v", userId, err)
 		return
@@ -154,35 +171,7 @@ func mergePreferencesFiles(visualizations map[string][]Visualization, root strin
 	}
 	defer mergedFile.Close()
 
-	var allPreferences []Preference
-
-	for userId := range visualizations {
-		userFileName := fmt.Sprintf("user_%s_preferences.csv", userId)
-		userFilePath := filepath.Join(root, userFileName)
-		userFile, err := os.Open(userFilePath)
-		if err != nil {
-			fmt.Printf("Error opening user preferences file %s: %v", userFileName, err)
-			continue
-		}
-		defer userFile.Close()
-
-		var preference Preference
-
-		if err := json.NewDecoder(userFile).Decode(&preference); err != nil {
-			fmt.Printf("Error decoding user preferences file %s: %v", userFileName, err)
-			userFile.Close()
-			continue
-		}
-		userFile.Close()
-
-		if err := os.Remove(userFilePath); err != nil {
-			fmt.Printf("Error deleting user preferences file %s: %v\n", userFileName, err)
-			continue
-		}
-
-		allPreferences = append(allPreferences, preference)
-		fmt.Printf("Loaded preferences for user %s\n", userId)
-	}
+	allPreferences := loadUsersPreferences(visualizations, root)
 
 	encoder := json.NewEncoder(mergedFile)
 	encoder.SetIndent("", "  ")
@@ -192,6 +181,49 @@ func mergePreferencesFiles(visualizations map[string][]Visualization, root strin
 	}
 
 	fmt.Printf("Merged preferences written to %s\n", mergedFilePath)
+}
+
+func loadUsersPreferences(visualizations map[string][]Visualization, root string) []Preference {
+	var allPreferences []Preference
+
+	for userId := range visualizations {
+		preference, err := loadUserPreference(userId, root)
+		if err != nil {
+			fmt.Printf("Error processing user %s: %v\n", userId, err)
+			continue
+		}
+		allPreferences = append(allPreferences, preference)
+		fmt.Printf("Loaded preferences for user %s\n", userId)
+	}
+
+	return allPreferences
+}
+
+func loadUserPreference(userId string, root string) (Preference, error) {
+	var preference Preference
+	userFileName, userFilePath, file, err := createUserFilePath(userId, root)
+
+	if err != nil {
+		return preference, fmt.Errorf("opening file %s: %w", userFileName, err)
+	}
+
+	if err := json.NewDecoder(file).Decode(&preference); err != nil {
+		file.Close()
+		return preference, fmt.Errorf("decoding file %s: %w", userFileName, err)
+	}
+	file.Close()
+
+	if err := os.Remove(userFilePath); err != nil {
+		fmt.Printf("Warning: failed to delete file %s: %v\n", userFileName, err)
+	}
+	return preference, nil
+}
+
+func createUserFilePath(userId string, root string) (string, string, *os.File, error) {
+	userFileName := fmt.Sprintf("user_%s_preferences.csv", userId)
+	userFilePath := filepath.Join(root, userFileName)
+	file, err := os.Open(userFilePath)
+	return userFileName, userFilePath, file, err
 }
 
 func main() {
@@ -204,8 +236,8 @@ func main() {
 	var wg sync.WaitGroup
 
 	for userId, visualizations := range visualizations {
-		wg.Add(1)
-		go getPreferences(userId, visualizations[0].UserName, visualizations, &wg)
+		wg.Add(CurrentGoRoutine)
+		go createPreferences(userId, visualizations[Currentuser].UserName, visualizations, &wg)
 	}
 
 	wg.Wait()

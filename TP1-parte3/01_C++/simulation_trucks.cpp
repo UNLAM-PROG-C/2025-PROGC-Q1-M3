@@ -220,9 +220,9 @@ int main_simulation(int num_trucks, int num_travels){
     return 0;
 }
 
-int main(int argc, char* argv[]){
+int main(int argc, char* argv[])
+{
     auto [num_trucks, num_travels] = process_args(argc, argv);
     main_simulation(num_trucks, num_travels);
     return 0;
 }
-

@@ -12,26 +12,31 @@
 
 const int SIMULATION_LIMIT = 1e9+1;
 
-std::pair<int,int> process_args(int argc, char* argv[]){
-    try{
-        if (argc != 3) {
-            throw std::invalid_argument("Wrong number of arguments");
-        }
-
-        int num_trucks = std::stoi(std::string(argv[1]));
-        int num_travels =std::stoi(std::string(argv[2]));
-
-        if (num_trucks <= 0 || num_travels <= 0 || num_trucks > SIMULATION_LIMIT || num_travels > SIMULATION_LIMIT) {
-            throw std::invalid_argument("The number of trucks and travels must be positive integers up to " + std::to_string(SIMULATION_LIMIT));
-        }
-
-        return std::make_pair(num_trucks, num_travels);
-    } catch (const std::exception& e) {
-        std::cerr << "Error: " << e.what() << std::endl;
-        std::cerr << "Usage: " << argv[0] << " <num_trucks> <num_travels>" << std::endl;
-        exit(1);
+std::pair<int,int> process_args(int argc, char* argv[])
+{
+  try
+  {
+    if (argc != 3)
+    {
+      throw std::invalid_argument("Wrong number of arguments");
     }
-    assert(false);
+
+    int num_trucks = std::stoi(std::string(argv[1]));
+    int num_travels =std::stoi(std::string(argv[2]));
+
+    if (num_trucks <= 0 || num_travels <= 0 || num_trucks > SIMULATION_LIMIT || num_travels > SIMULATION_LIMIT) 
+    {
+      throw std::invalid_argument("The number of trucks and travels must be positive integers up to " + std::to_string(SIMULATION_LIMIT));
+    }
+
+    return std::make_pair(num_trucks, num_travels);
+  } catch (const std::exception& e)
+  {
+    std::cerr << "Error: " << e.what() << std::endl;
+    std::cerr << "Usage: " << argv[0] << " <num_trucks> <num_travels>" << std::endl;
+    exit(1);
+  }
+  assert(false);
 }
 
 const int MIN_TRAVEL_TIME = 18, MAX_TRAVEL_TIME = 24;
@@ -45,125 +50,146 @@ std::mutex cout_mutex;
 
 std::atomic<int> hours_passed(0);
 
-void advance_hour(){
-    hours_passed++;
-    std::lock_guard<std::mutex> cout_lock(cout_mutex);
-    std::cout << std::string(50,'=');
-    std::cout << "[HOUR " << hours_passed << "]" ;
-    std::cout << std::string(50,'=') << std::endl;
+void advance_hour()
+{
+  hours_passed++;
+  std::lock_guard<std::mutex> cout_lock(cout_mutex);
+  std::cout << std::string(50,'=');
+  std::cout << "[HOUR " << hours_passed << "]" ;
+  std::cout << std::string(50,'=') << std::endl;
 }
 
 using CompletitionFunction = std::function<void()>;
 
 std::shared_ptr<std::barrier<CompletitionFunction>> clock_barrier = nullptr;
 
-void simulate_time_passage(int hours_to_pass, std::string message = ""){
-    for(int i = 0; i < hours_to_pass; i++){
+void simulate_time_passage(int hours_to_pass, std::string message = "")
+{
+  for(int i = 0; i < hours_to_pass; i++)
+  {
 
-        cout_mutex.lock();
-        // std::cout<< "[HOUR "<<hours_passed<<" ] \t" ;
-        std::cout<< message << std::endl;
-        cout_mutex.unlock();
-
-        clock_barrier->arrive_and_wait();
-    }
-}
-
-
-void load_in_tapiales(int truck_id){
-    while(!tapiales_load.try_acquire()){
-        simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to load in Tapiales");
-    }
-    simulate_time_passage( LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading in Tapiales");
-    tapiales_load.release();
-}
-
-void travel_from_tapiales_to_fernandez(int truck_id){
-    int travel_time = rand() % (MAX_TRAVEL_TIME - MIN_TRAVEL_TIME + 1) + MIN_TRAVEL_TIME;
-    simulate_time_passage( travel_time, "Truck " + std::to_string(truck_id) + " is traveling from Tapiales to Fernandez");
-}   
-
-void unload_in_fernandez(int truck_id){
-    while(!fernandez_unload.try_acquire()){
-        simulate_time_passage( 1, "Truck " + std::to_string(truck_id) + " is waiting to unload in Fernandez");
-    }
-    simulate_time_passage( UNLOAD_TIME, "Truck " + std::to_string(truck_id) + " is unloading in Fernandez");
-    fernandez_unload.release();
-}
-
-void tapiales_to_fernandez(int truck_id){
-    load_in_tapiales(truck_id);
-    travel_from_tapiales_to_fernandez(truck_id);
-    unload_in_fernandez(truck_id);
-}
-
-void load_in_fernandez(int truck_id){
-    while(!fernandez_load.try_acquire()){
-        simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to load in Fernandez");
-    }
-    simulate_time_passage( LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading in Fernandez");
-    fernandez_load.release();
-}
-
-void load_gas_in_fernandez(int truck_id){
-    while(!fernandez_gas_station.try_acquire()){
-        simulate_time_passage( 1, "Truck " + std::to_string(truck_id) + " is waiting to load gas in Fernandez");
-    }
-    simulate_time_passage( GAS_LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading gas in Fernandez");
-    fernandez_gas_station.release();
-}
-
-void travel_from_fernandez_to_tapiales(int truck_id){
-    int travel_time = rand() % (MAX_TRAVEL_TIME - MIN_TRAVEL_TIME + 1) + MIN_TRAVEL_TIME;
-    simulate_time_passage( travel_time, "Truck " + std::to_string(truck_id) + " is traveling from Fernandez to Tapiales");
-}
-
-void unload_in_tapiales(int truck_id){
-    while(!tapiales_unload.try_acquire()){
-        simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to unload in Tapiales");
-    }
-    simulate_time_passage( UNLOAD_TIME, "Truck " + std::to_string(truck_id) + " is unloading in Tapiales");
-    tapiales_unload.release();
-}
-
-void fernandez_to_tapiales(int truck_id){
-    load_in_fernandez(truck_id);
-    load_gas_in_fernandez(truck_id);
-    travel_from_fernandez_to_tapiales(truck_id);
-    unload_in_tapiales(truck_id);
-}
-
-void truck_simulation_core(int truck_id){
-    while(true){
-        if(! tapiales_travels.try_acquire()){
-            break;
-        }
-        tapiales_to_fernandez(truck_id);
-        
-        if(! fernandez_travels.try_acquire()){
-            break;
-        }
-        
-        fernandez_to_tapiales(truck_id);
-    }
-}
-
-int truck_simulation(int truck_id){
     cout_mutex.lock();
-    std::cout << "Truck " << truck_id << " is starting its travels" << std::endl;
+    // std::cout<< "[HOUR "<<hours_passed<<" ] \t" ;
+    std::cout<< message << std::endl;
     cout_mutex.unlock();
 
     clock_barrier->arrive_and_wait();
+  }
+}
 
-    truck_simulation_core(truck_id);
 
-    cout_mutex.lock();
-    std::cout << "Truck " << truck_id << " has finished its travels" << std::endl;
-    cout_mutex.unlock();
-    
-    clock_barrier->arrive_and_drop();
-    
-    return hours_passed;
+void load_in_tapiales(int truck_id)
+{
+  while(!tapiales_load.try_acquire())
+  {
+    simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to load in Tapiales");
+  }
+  simulate_time_passage( LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading in Tapiales");
+  tapiales_load.release();
+}
+
+void travel_from_tapiales_to_fernandez(int truck_id)
+{
+  int travel_time = rand() % (MAX_TRAVEL_TIME - MIN_TRAVEL_TIME + 1) + MIN_TRAVEL_TIME;
+  simulate_time_passage( travel_time, "Truck " + std::to_string(truck_id) + " is traveling from Tapiales to Fernandez");
+}   
+
+void unload_in_fernandez(int truck_id)
+{
+  while(!fernandez_unload.try_acquire())
+  {
+    simulate_time_passage( 1, "Truck " + std::to_string(truck_id) + " is waiting to unload in Fernandez");
+  }
+  simulate_time_passage( UNLOAD_TIME, "Truck " + std::to_string(truck_id) + " is unloading in Fernandez");
+  fernandez_unload.release();
+}
+
+void tapiales_to_fernandez(int truck_id)
+{
+  load_in_tapiales(truck_id);
+  travel_from_tapiales_to_fernandez(truck_id);
+  unload_in_fernandez(truck_id);
+}
+
+void load_in_fernandez(int truck_id)
+{
+  while(!fernandez_load.try_acquire()){
+    simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to load in Fernandez");
+  }
+  simulate_time_passage( LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading in Fernandez");
+  fernandez_load.release();
+}
+
+void load_gas_in_fernandez(int truck_id)
+{
+  while(!fernandez_gas_station.try_acquire())
+  {
+    simulate_time_passage( 1, "Truck " + std::to_string(truck_id) + " is waiting to load gas in Fernandez");
+  }
+  simulate_time_passage( GAS_LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading gas in Fernandez");
+  fernandez_gas_station.release();
+}
+
+void travel_from_fernandez_to_tapiales(int truck_id)
+{
+  int travel_time = rand() % (MAX_TRAVEL_TIME - MIN_TRAVEL_TIME + 1) + MIN_TRAVEL_TIME;
+  simulate_time_passage( travel_time, "Truck " + std::to_string(truck_id) + " is traveling from Fernandez to Tapiales");
+}
+
+void unload_in_tapiales(int truck_id)
+{
+  while(!tapiales_unload.try_acquire())
+  {
+    simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to unload in Tapiales");
+  }
+  simulate_time_passage( UNLOAD_TIME, "Truck " + std::to_string(truck_id) + " is unloading in Tapiales");
+  tapiales_unload.release();
+}
+
+void fernandez_to_tapiales(int truck_id)
+{
+  load_in_fernandez(truck_id);
+  load_gas_in_fernandez(truck_id);
+  travel_from_fernandez_to_tapiales(truck_id);
+  unload_in_tapiales(truck_id);
+}
+
+void truck_simulation_core(int truck_id)
+{
+  while(true)
+  {
+    if(! tapiales_travels.try_acquire())
+    {
+      break;
+    }
+    tapiales_to_fernandez(truck_id);
+        
+    if(! fernandez_travels.try_acquire())
+    {
+      break;
+    }
+        
+    fernandez_to_tapiales(truck_id);
+  }
+}
+
+int truck_simulation(int truck_id)
+{
+  cout_mutex.lock();
+  std::cout << "Truck " << truck_id << " is starting its travels" << std::endl;
+  cout_mutex.unlock();
+  
+  clock_barrier->arrive_and_wait();
+  
+  truck_simulation_core(truck_id);
+  
+  cout_mutex.lock();
+  std::cout << "Truck " << truck_id << " has finished its travels" << std::endl;
+  cout_mutex.unlock();
+  
+  clock_barrier->arrive_and_drop();
+  
+  return hours_passed;
 }
 
 void run_main_simulation(int num_trucks){

@@ -47,7 +47,7 @@ def generate_results() -> list[tuple[int, int, float]]:
     """
     from tqdm import tqdm
     results = []
-    progress_bar = tqdm(total=(MAX_CLONES - MIN_CLONES + 1) * NUM_CALLS, desc="Generating results", unit="call")
+    progress_bar = tqdm(total=(MAX_CLONES - MIN_CLONES + 1) * NUM_CALLS, desc="Generating results", unit="call", file = sys.stdout)
 
     for num_clones in range(MIN_CLONES, MAX_CLONES + 1):
         for _ in range(NUM_CALLS):

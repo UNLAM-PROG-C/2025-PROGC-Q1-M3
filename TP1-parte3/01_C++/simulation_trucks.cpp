@@ -113,7 +113,8 @@ void tapiales_to_fernandez(int truck_id)
 
 void load_in_fernandez(int truck_id)
 {
-  while(!fernandez_load.try_acquire()){
+  while(!fernandez_load.try_acquire())
+  {
     simulate_time_passage(1, "Truck " + std::to_string(truck_id) + " is waiting to load in Fernandez");
   }
   simulate_time_passage( LOAD_TIME, "Truck " + std::to_string(truck_id) + " is loading in Fernandez");
@@ -192,37 +193,41 @@ int truck_simulation(int truck_id)
   return hours_passed;
 }
 
-void run_main_simulation(int num_trucks){
-    std::thread trucks[num_trucks];
-    for(int truck_id = 1; truck_id <= num_trucks; truck_id++){
-        trucks[truck_id-1] = std::thread(truck_simulation, truck_id);
-    }
+void run_main_simulation(int num_trucks)
+{
+  std::thread trucks[num_trucks];
+  for(int truck_id = 1; truck_id <= num_trucks; truck_id++)
+  {
+    trucks[truck_id-1] = std::thread(truck_simulation, truck_id);
+  }
 
-    for(int i = 0; i < num_trucks; i++){
-        trucks[i].join();
-    }
+  for(int i = 0; i < num_trucks; i++)
+  {
+    trucks[i].join();
+  }
 
-    std::cout << "Simulation finished" << std::endl;
+  std::cout << "Simulation finished" << std::endl;
 }
 
-int main_simulation(int num_trucks, int num_travels){
-    std::cout<< "Starting simulation with " << num_trucks << " trucks and " << num_travels << " travels" << std::endl;
-    tapiales_travels.release(num_travels);
-    fernandez_travels.release(num_travels);
-    
-    clock_barrier = std::make_shared<std::barrier<CompletitionFunction>>(num_trucks, advance_hour);
-    
-    run_main_simulation(num_trucks);
-    
-    std::cout << "All trucks have finished their travels in " << hours_passed << " hours "<< std::endl;
-    const int HOURS_IN_A_DAY = 24;
-    std::cout << "This is "<<hours_passed/HOURS_IN_A_DAY << " days and "<< hours_passed % HOURS_IN_A_DAY << " hours " << std::endl;
-    return 0;
+int main_simulation(int num_trucks, int num_travels)
+{
+  std::cout<< "Starting simulation with " << num_trucks << " trucks and " << num_travels << " travels" << std::endl;
+  tapiales_travels.release(num_travels);
+  fernandez_travels.release(num_travels);
+  
+  clock_barrier = std::make_shared<std::barrier<CompletitionFunction>>(num_trucks, advance_hour);
+  
+  run_main_simulation(num_trucks);
+  
+  std::cout << "All trucks have finished their travels in " << hours_passed << " hours "<< std::endl;
+  const int HOURS_IN_A_DAY = 24;
+  std::cout << "This is "<<hours_passed/HOURS_IN_A_DAY << " days and "<< hours_passed % HOURS_IN_A_DAY << " hours " << std::endl;
+  return 0;
 }
 
 int main(int argc, char* argv[])
 {
-    auto [num_trucks, num_travels] = process_args(argc, argv);
-    main_simulation(num_trucks, num_travels);
-    return 0;
+  auto [num_trucks, num_travels] = process_args(argc, argv);
+  main_simulation(num_trucks, num_travels);
+  return 0;
 }

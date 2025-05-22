@@ -25,7 +25,10 @@ public class GiorgiosBakery
 
   private static final Object doughTableLock = new Object();
 
-  private static final String[] names = {"Alice", "Bob", "Charlie", "Diana", "Eve", "Frank"};
+  private static final String[] names = 
+  {
+    "Alice", "Bob", "Charlie", "Diana", "Eve", "Frank"
+  };
 
   public static void main(String[] args) 
   {
@@ -99,7 +102,8 @@ public class GiorgiosBakery
 
           synchronized (doughTableLock) 
           {
-            while (doughTable.size() > TABLE_CAPACITY - this.doughBallsPerTurn) {
+            while (doughTable.size() > TABLE_CAPACITY - this.doughBallsPerTurn) 
+            {
               doughTableLock.wait();
             }
 
@@ -138,7 +142,8 @@ public class GiorgiosBakery
               doughTableLock.wait();
             }
             List<String> batch = new ArrayList<>();
-            for (int i = 0; i < 5; i++) {
+            for (int i = 0; i < 5; i++) 
+            {
               batch.add(doughTable.take());
             }
             System.out.println("Baker took 5 dough balls. Remaining in Table: " + doughTable.size());
@@ -216,7 +221,8 @@ public class GiorgiosBakery
           counter.put("Package");
           System.out.println(name + " placed package. Counter: " + counter.size());
         }
-      } catch (InterruptedException e) {
+      } catch (InterruptedException e) 
+      {
         Thread.currentThread().interrupt();
       }
     }
@@ -236,7 +242,8 @@ public class GiorgiosBakery
     @Override
     public void run() 
     {
-      try {
+      try 
+      {
         int packages = 1 + random.nextInt(3);
         for (int i = 0; i < packages; i++)
         {
@@ -252,7 +259,8 @@ public class GiorgiosBakery
           clientsServed++;
         }
         System.out.println("Client " + id + " (" + name + ") bought " + packages + " package(s). Total sales: " + totalSales);
-      } catch (InterruptedException e) {
+      } catch (InterruptedException e) 
+      {
         Thread.currentThread().interrupt();
       }
     }
